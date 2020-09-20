@@ -109,6 +109,7 @@ int evaluate_params(compiler_context *context, int num, int formatstr[], int for
 				if (numofparams == MAXPRINTFPARAMS)
 				{
 					error(context, too_many_printf_params);
+					context->error_flag = 3;
 					return 0;
 				}
 
@@ -142,11 +143,13 @@ int evaluate_params(compiler_context *context, int num, int formatstr[], int for
 
 				case 0:
 					error(context, printf_no_format_placeholder);
+					context->error_flag = 3;
 					return 0;
 
 				default:
 					context->bad_printf_placeholder = fsi;
 					error(context, printf_unknown_format_placeholder);
+					context->error_flag = 3;
 					return 0;
 			}
 		}
@@ -203,6 +206,7 @@ void mustbe(compiler_context *context, int what, int e)
 {
 	if (context->next != what)
 	{
+		context->error_flag = SEMICOLON;
 		error(context, e);
 		context->cur = what;
 	}
@@ -271,6 +275,7 @@ int toidentab(compiler_context *context, int f, int type)
 	{
 		if (context->wasmain)
 		{
+			context->error_flag = END;
 			error(context, more_than_1_main); //--
 			context->error_flag = 5;
 			return 0; // 1
@@ -771,6 +776,7 @@ void primaryexpr(compiler_context *context)
 
 		if (scaner(context) != LEFTBR)
 		{
+			context->error_flag = SEMICOLON;
 			error(context, no_leftbr_in_stand_func);
 			context->buf_cur = context->next;
 			context->next = context->cur;
@@ -1313,7 +1319,12 @@ int find_field(compiler_context *context, int stype)
 	int select_displ = 0;
 
 	scaner(context);
-	mustbe(context, IDENT, after_dot_must_be_ident);
+	mustbe_complex(context, IDENT, after_dot_must_be_ident);
+	if (context->error_flag == after_dot_must_be_ident)
+	{
+		context->error_flag = 5;
+		return 0; // 1
+	}
 
 	for (i = 0; i < context->modetab[stype + 2]; i += 2) // тут хранится удвоенное n
 	{
@@ -2095,6 +2106,7 @@ void struct_init(compiler_context *context, int decl_type)
 
 	if (context->cur != BEGIN)
 	{
+		context->error_flag = SEMICOLON;
 		error(context, struct_init_must_start_from_BEGIN);
 		context->buf_cur = context->next;
 		context->next = context->cur;
@@ -2121,6 +2133,7 @@ void struct_init(compiler_context *context, int decl_type)
 			}
 			else
 			{
+				context->error_flag = SEMICOLON;
 				error(context, no_comma_in_init_list);
 				context->next = context->cur;
 				context->cur = COMMA;
@@ -2413,6 +2426,7 @@ void array_init(compiler_context *context, int decl_type)
 		{
 			if (context->cur != BEGIN)
 			{
+				context->error_flag = SEMICOLON;
 				error(context, arr_init_must_start_from_BEGIN);
 				context->buf_cur = context->next;
 				context->next = context->cur;
@@ -2467,6 +2481,11 @@ void array_init(compiler_context *context, int decl_type)
 	else
 	{
 		inition(context, decl_type);
+		if (context->error_flag == 5)
+		{
+			context->error_flag = 7;
+			return; // 1
+		}
 		context->onlystrings = 0;
 	}
 }
@@ -2778,8 +2797,9 @@ void statement(compiler_context *context)
 
 				paramnum = evaluate_params(context, fnum = context->num, formatstr, formattypes, placeholders);
 
-				if (context->error_flag)
+				if (context->error_flag == 3)
 				{
+					context->error_flag = 1;
 					flagsemicol = 0;
 					break;
 				}
@@ -2827,7 +2847,8 @@ void statement(compiler_context *context)
 
 				if (context->cur != RIGHTBR)
 				{
-					error(context, no_rightbr_in_printf);
+					context->error_flag = SEMICOLON;
+					error(context, no_rightbr_in_printf);//---!!!
 					context->buf_cur = context->next;
 					context->next = context->cur;
 					context->cur = RIGHTBR;
@@ -2978,6 +2999,7 @@ void statement(compiler_context *context)
 				}
 				else
 				{
+					context->error_flag = SEMICOLON;
 					error(context, wait_while_in_do_stmt);
 					context->cur = LWHILE;
 					exprinbrkts(context, cond_must_be_in_brkts);
@@ -3237,6 +3259,7 @@ void statement(compiler_context *context)
 
 	if (flagsemicol && scaner(context) != SEMICOLON)
 	{
+		context->error_flag = SEMICOLON;
 		error(context, no_semicolon_after_stmt);
 		context->buf_cur = context->next;
 		context->next = context->cur;
@@ -3349,6 +3372,7 @@ int struct_decl_list(compiler_context *context)
 		curdispl += szof(context, t);
 		if (scaner(context) != SEMICOLON)
 		{
+			context->error_flag = SEMICOLON;
 			error(context, no_semicomma_in_struct);
 			context->buf_cur = context->next;
 			context->next = context->cur;
@@ -3437,6 +3461,7 @@ int gettype(compiler_context *context)
 		}
 		else
 		{
+			context->error_flag = END;
 			error(context, wrong_struct);
 			context->error_flag = 3;
 			return 0; // 1
@@ -3513,6 +3538,9 @@ void block(compiler_context *context, int b)
 
 			if (context->error_flag == after_type_must_be_ident)
 			{
+				context->buf_cur = context->next;
+				context->next = context->cur;
+				context->buf_flag++;
 				context->error_flag = 1;
 				break;
 			}
@@ -3520,6 +3548,9 @@ void block(compiler_context *context, int b)
 			decl_id(context, temp);
 			if (context->error_flag == 4)
 			{
+				context->buf_cur = context->next;
+				context->next = context->cur;
+				context->buf_flag++;
 				context->error_flag = 1;
 				break;
 			}
@@ -3534,6 +3565,7 @@ void block(compiler_context *context, int b)
 			}
 			else
 			{
+				context->error_flag = SEMICOLON;
 				error(context, def_must_end_with_semicomma);
 				context->cur = SEMICOLON;
 				repeat = 0;
@@ -3636,10 +3668,9 @@ void function_definition(compiler_context *context)
 	totree(context, TReturnvoid);
 	totree(context, TEnd);
 	// }
-	if (ftype != LVOID && !context->wasret)
+	if (ftype != LVOID && !context->wasret && !context->error_flag)//наводнение ???
 	{
 		error(context, no_ret_in_func);
-		context->error_flag = 1;
 		return; // 1
 	}
 	for (i = context->id - 4; i >= context->curid; i -= 4)
@@ -3852,6 +3883,7 @@ int func_declarator(compiler_context *context, int level, int func_d, int firstd
 		}
 		else
 		{
+			context->error_flag = SEMICOLON;
 			error(context, wrong_param_list);
 			context->buf_cur = context->next;
 			context->next = context->cur;
@@ -4011,6 +4043,7 @@ void ext_decl(compiler_context *context)
 			}
 			else
 			{
+				context->cur = SEMICOLON;
 				error(context, def_must_end_with_semicomma);
 				context->cur = SEMICOLON;
 				repeat = 0;

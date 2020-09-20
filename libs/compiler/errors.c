@@ -193,25 +193,33 @@ void error(compiler_context *context, int ernum)
 	*/
 	print_error_location(context);
 	printer_printf(&context->err_options, "\x1B[1;31mошибка:\x1B[0m ");
-	context->error_flag = 1;
 	context->tc = context->temp_tc;
-	if (!context->new_line_flag && context->curchar != EOF)
+	if (context->error_flag != SEMICOLON && (!context->new_line_flag && context->curchar != EOF) 
+		|| context->error_flag == END )
 	{
-		while (context->curchar != '\n' && context->curchar != EOF)
+		while (context->curchar != EOF && ( context->error_flag != END && context->curchar != '\n' 
+			&& context->curchar != ';') || ( context->error_flag == END && context->curchar != '}'))
 		{
+			printf("0");
 			nextch(context);
 		}
 
-		if (context->curchar != EOF)
+		printf("!!!!!!!!!!!!!!error1\n");
+
+		if (context->curchar != EOF || context->error_flag != END )
 		{
 			scaner(context);
 		}
+		printf("!!!!!!!!!!!!!!error2\n");
 	}
 
-	if (context->curchar != EOF)
+	if (context->error_flag != SEMICOLON && context->curchar != EOF)
 	{
 		scaner(context);
 	}
+
+	context->error_flag = 1;
+	printf("!!!!!!!!!!!!!!error3\n");
 
 	switch (ernum)
 	{
