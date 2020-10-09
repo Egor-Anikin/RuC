@@ -200,17 +200,13 @@ void error(compiler_context *context, int ernum)
 		while (context->curchar != EOF && ( context->error_flag != END && context->curchar != '\n' 
 			&& context->curchar != ';') || ( context->error_flag == END && context->curchar != '}'))
 		{
-			printf("0");
 			nextch(context);
 		}
-
-		printf("!!!!!!!!!!!!!!error1\n");
 
 		if (context->curchar != EOF || context->error_flag != END )
 		{
 			scaner(context);
 		}
-		printf("!!!!!!!!!!!!!!error2\n");
 	}
 
 	if (context->error_flag != SEMICOLON && context->curchar != EOF)
@@ -219,7 +215,6 @@ void error(compiler_context *context, int ernum)
 	}
 
 	context->error_flag = 1;
-	printf("!!!!!!!!!!!!!!error3\n");
 
 	switch (ernum)
 	{

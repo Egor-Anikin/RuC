@@ -3479,6 +3479,9 @@ int gettype(compiler_context *context)
 		{
 			error(context, ident_not_type);
 			context->error_flag = 3;
+			context->buf_cur = context->next;
+			context->next = context->cur;
+			context->buf_flag++;
 			return 0; // 1
 		}
 		context->was_struct_with_arr = context->identab[context->lastid + 3] - 1000;
@@ -3488,6 +3491,9 @@ int gettype(compiler_context *context)
 	{
 		error(context, not_decl);
 		context->error_flag = 3;
+		context->buf_cur = context->next;
+		context->next = context->cur;
+		context->buf_flag++;
 		return 0; // 1
 	}
 	return 0;
