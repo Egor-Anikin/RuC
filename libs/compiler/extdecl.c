@@ -3490,10 +3490,13 @@ int gettype(compiler_context *context)
 	else
 	{
 		error(context, not_decl);
-		context->error_flag = 3;
-		context->buf_cur = context->next;
-		context->next = context->cur;
-		context->buf_flag++;
+		if (context->curchar != EOF)
+		{
+			context->error_flag = 3;
+			context->buf_cur = context->next;
+			context->next = context->cur;
+			context->buf_flag++;
+		}
 		return 0; // 1
 	}
 	return 0;
