@@ -495,7 +495,11 @@ char *preprocess_file(int argc, const char *argv[], data_files *sources, data_fi
 	preprocess_c_file(&context);
 
 	context.before_temp = NULL;
-	free(context.include_ways);
+	
+	if(context.include_ways != NULL)
+	{
+		free(context.include_ways);
+	}
 
 	char *macro_processed = context.output_options.ptr;
 

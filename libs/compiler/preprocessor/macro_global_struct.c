@@ -44,7 +44,10 @@ void long_string_pinter(macro_long_string *s, int a)
 
 void macro_long_string_free(macro_long_string *s)
 {
-	free(s->str);
+	if(s->str != NULL)
+	{
+		free(s->str);
+	}
 }
 
 
@@ -65,6 +68,7 @@ void data_file_free(data_file *f)
 {
 	if (f->input != NULL)
 	{
+		fclose(f->input);
 		free(f->name);
 	}
 
@@ -74,12 +78,15 @@ void data_file_free(data_file *f)
 
 void data_files_clear(data_files *fs)
 {
-	for (int i = 0; i < fs->p; i++)
+	if(fs != NULL)
 	{
-		data_file_free(&fs->files[i]);
-	}
+		for (int i = 0; i < fs->p; i++)
+		{
+			data_file_free(&fs->files[i]);
+		}
 
-	free(fs->files);
+		free(fs->files);
+	}
 }
 
 void data_files_init(data_files *s, int num)
